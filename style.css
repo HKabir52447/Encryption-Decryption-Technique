@@ -2,6 +2,7 @@ body{
     display: flex;
     justify-content: center;
     align-items: center;
+    background: linear-gradient(to right, #f3f6fb, #e8eef7);
 }
 .container{
     width: 90%;
@@ -12,4 +13,7 @@ body{
 }
 hr{
     color: oklch(87.2% 0.01 258.338);
+}
+a {
+  transition: all 0.3s ease;
 }

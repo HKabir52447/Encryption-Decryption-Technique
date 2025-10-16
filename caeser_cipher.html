@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Caesar Cipher Converter</title>
+    <title>Monoalphabetic Cipher</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,11 +24,15 @@
         .step:last-child {
             border-bottom: none;
         }
+
+        .cipher-container {
+            max-width: 1000px;
+        }
     </style>
 </head>
 
 <body class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-4xl w-full">
+    <!-- <div class="bg-white rounded-2xl shadow-xl p-8 max-w-4xl w-full">
         <h1 class="text-3xl md:text-4xl font-bold text-center text-sky-500 mb-2">Caesar Cipher</h1>
         <div class="space-y-4">
             <div>
@@ -63,7 +67,71 @@
             <a class="bg-blue-300 hover:bg-blue-500 hover:text-white px-8 py-1 rounded-md font-bold"
                 href="index.html">Back</a>
         </div>
+    </div> -->
+<div id="app" class="cipher-container w-full bg-white shadow-2xl rounded-2xl p-6 md:p-12 border border-gray-100 mt-10">
+
+  <h1 class="text-3xl md:text-4xl font-bold text-center mb-4 text-sky-500">
+    Caesar Cipher 🔠
+  </h1>
+
+  <!-- Key Input Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+    
+    <!-- Shift Key -->
+    <div class="lg:col-span-1">
+      <label for="key" class="block text-sm font-semibold text-indigo-800 mb-2">
+        Cipher Key (Shift Value)
+      </label>
+      <input type="number" id="key" value="3"
+             class="w-full p-3 border border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">
     </div>
+
+    <!-- Description -->
+    <div class="lg:col-span-2 flex items-center text-sm text-indigo-700">
+      <p>Use the shift key to move letters in the alphabet. Example: A → D with shift = 3</p>
+    </div>
+  </div>
+
+  <!-- Input/Output Areas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div>
+      <label for="inputText" class="block text-lg font-semibold text-gray-800 mb-2">
+        Input Text
+      </label>
+      <textarea id="inputText" rows="6" placeholder="Enter your message here..."
+                class="w-full p-4 bg-blue-100 border border-blue-300 rounded-lg focus:outline-blue-500 tracking-wider resize-none"></textarea>
+    </div>
+
+    <div>
+      <label for="resultBox" class="block text-lg font-semibold text-green-800 mb-2">
+        Output
+      </label>
+      <div id="resultBox"
+           class="w-full p-4 border border-green-300 rounded-lg bg-green-100 text-green-900 tracking-wider font-mono h-[180px] overflow-auto"></div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
+    <button id="encryptButton"
+            class="w-full sm:w-1/2 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-blue-300">
+      Encrypt
+    </button>
+    <button id="decryptButton"
+            class="w-full sm:w-1/2 bg-green-500 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-600 transition duration-200 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-green-300">
+      Decrypt
+    </button>
+  </div>
+
+  <!-- Back Button -->
+  <div class="flex justify-center">
+    <a href="index.html"
+       class="bg-blue-200 hover:bg-blue-400 text-blue-900 hover:text-white px-8 py-2 rounded-md font-bold transition duration-200 ease-in-out">
+      Back
+    </a>
+  </div>
+
+</div>
 
     <script>
         function caesarCipher(text, shift, isencrypt) {

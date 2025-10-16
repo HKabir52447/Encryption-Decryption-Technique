@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hill Cipher</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(90deg, rgb(32, 87, 138) 0%, rgba(25, 25, 94, 0.377) 35%, rgba(32, 86, 138, 1) 100%);
+        }
+
+        .cipher-container {
+            max-width: 1000px;
+        }
+
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        textarea::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        textarea::-webkit-scrollbar-track {
+            background-color: #f1f5f9;
+        }
+
+        .matrix-cell {
+            padding: 8px 12px;
+            background-color: #eef2ff;
+            color: #4338ca;
+            font-weight: 600;
+            border: 1px solid #c7d2fe;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8 min-h-screen flex justify-center items-start">
+
+    <div id="app"
+        class="cipher-container w-full bg-white shadow-2xl rounded-2xl p-6 md:p-12 border border-gray-100 mt-10">
+
+        <h1 class="text-3xl md:text-4xl font-bold text-center mb-4 text-sky-500">
+            Hill Cipher 🔢
+        </h1>
+        <!-- Controls and Key Input -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+
+            <!-- Matrix Size Selector -->
+            <div>
+                <label for="matrix-size" class="block text-sm font-semibold text-indigo-800 mb-2">
+                    Matrix Size (N)
+                </label>
+                <select id="matrix-size"
+                    class="w-full p-3 border border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">
+                    <option value="2">2x2 (Key length 4)</option>
+                    <option value="3">3x3 (Key length 9)</option>
+                </select>
+            </div>
+
+            <!-- Key Input -->
+            <div class="lg:col-span-2">
+                <label for="key-input" class="block text-sm font-semibold text-indigo-800 mb-2">
+                    Cipher Key (N² letters, e.g., 'GOOD' for 2x2)
+                </label>
+                <input type="text" id="key-input" placeholder="Enter key (e.g., GYBNQKURP for 3x3)"
+                    class="w-full p-3 border border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out uppercase tracking-wider"
+                    value="">
+            </div>
+
+            <!-- Key Matrix Display -->
+            <div id="matrix-display-container" class="lg:col-span-3 mt-4 hidden">
+                <p class="text-sm font-medium text-indigo-700 mb-2">Key Matrix (K) - Numerical:</p>
+                <div id="key-matrix-display" class="w-fit p-3 bg-indigo-100 rounded-lg shadow-inner mx-auto">
+                    <!-- Matrix cells will be inserted here -->
+                </div>
+            </div>
+
+            <div id="det-display" class="lg:col-span-3 text-sm font-medium text-indigo-700 mt-2">
+                <!-- Determinant info will be displayed here -->
+            </div>
+        </div>
+
+        <!-- Input/Output Areas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <label for="text-input" class="block text-lg font-semibold text-gray-800 mb-2">
+                    Input Text
+                </label>
+                <textarea id="text-input" rows="6"
+                    placeholder="Enter message. Non-letters ignored. Text padded with 'X' to match block size."
+                    class="w-full p-4 bg-blue-100 border border-blue-300 rounded-lg focus:outline-blue-500 tracking-wider"></textarea>
+            </div>
+            <div>
+                <label for="output-text" class="block text-lg font-semibold text-green-800 mb-2">
+                    Output
+                </label>
+                <textarea id="output-text" rows="6" readonly
+                    class="w-full p-4 border border-green-300 rounded-lg bg-green-100 text-green-900 tracking-wider font-mono cursor-default focus:outline-none"></textarea>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
+            <button id="encrypt-btn"
+                class="w-full sm:w-1/2 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ease-in-out transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-blue-300">
+                <span class="text-lg">Encrypt</span>
+            </button>
+            <button id="decrypt-btn"
+                class="w-full sm:w-1/2 bg-green-500 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-600 transition duration-200 ease-in-out transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-green-300">
+                <span class="text-lg">Decrypt</span>
+            </button>
+        </div>
+
+        <!-- Status/Error Message -->
+        <div id="status-message"
+            class="mt-4 p-3 rounded-lg text-center font-medium transition duration-300 ease-in-out opacity-0">
+            <!-- Messages will appear here -->
+        </div>
+
+        <div class="pt-5 flex justify-center">
+            <a class="bg-blue-300 hover:bg-blue-500 hover:text-white px-8 py-1 rounded-md font-bold"
+                href="index.html">Back</a>
+        </div>
+
+    </div>
+    <script>
+        /* ---------- Helpers ---------- */
+        const A_CODE = 'A'.charCodeAt(0);
+
+        function letterToNum(ch) {
+            return ch.charCodeAt(0) - A_CODE;
+        }
+        function numToLetter(n) {
+            return String.fromCharCode(A_CODE + ((n % 26) + 26) % 26);
+        }
+        function showStatus(msg, type = 'info') {
+            const el = document.getElementById('status-message');
+            el.style.opacity = 1;
+            el.innerText = msg;
+            el.className = (type === 'error') ? 'mt-4 p-3 rounded-lg text-center font-medium text-red-700 bg-red-100' :
+                (type === 'success') ? 'mt-4 p-3 rounded-lg text-center font-medium text-green-700 bg-green-100' :
+                    'mt-4 p-3 rounded-lg text-center font-medium text-indigo-700 bg-indigo-100';
+            // fade after 6s
+            clearTimeout(el._hideTimer);
+            el._hideTimer = setTimeout(() => { el.style.opacity = 0; }, 6000);
+        }
+
+        /* ---------- Parse key from letters to numeric matrix ---------- */
+        function parseKeyLetters(keyStr, n) {
+            // remove non letters, uppercase
+            const cleaned = keyStr.toUpperCase().replace(/[^A-Z]/g, '');
+            if (cleaned.length !== n * n) return null;
+            const mat = [];
+            for (let r = 0; r < n; r++) {
+                const row = [];
+                for (let c = 0; c < n; c++) {
+                    row.push(letterToNum(cleaned[r * n + c]));
+                }
+                mat.push(row);
+            }
+            return mat;
+        }
+
+        /* ---------- Display numeric matrix ---------- */
+        function displayMatrix(mat) {
+            const container = document.getElementById('matrix-display-container');
+            const display = document.getElementById('key-matrix-display');
+            display.innerHTML = '';
+            if (!mat) { container.classList.add('hidden'); return; }
+            container.classList.remove('hidden');
+            const table = document.createElement('table');
+            table.style.borderCollapse = 'collapse';
+            mat.forEach(row => {
+                const tr = document.createElement('tr');
+                row.forEach(cell => {
+                    const td = document.createElement('td');
+                    td.innerText = cell;
+                    td.style.padding = '6px 10px';
+                    td.style.border = '1px solid rgba(0,0,0,0.06)';
+                    td.style.fontFamily = 'monospace';
+                    td.style.fontWeight = '600';
+                    td.style.minWidth = '36px';
+                    td.style.textAlign = 'center';
+                    tr.appendChild(td);
+                });
+                table.appendChild(tr);
+            });
+            display.appendChild(table);
+        }
+
+        /* ---------- Determinant (2x2 or 3x3) ---------- */
+        function determinant(matrix) {
+            const n = matrix.length;
+            if (n === 2) {
+                return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+            } else if (n === 3) {
+                const m = matrix;
+                return m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+                    - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+                    + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+            }
+            return 0;
+        }
+
+        /* ---------- Extended GCD for modular inverse ---------- */
+        function egcd(a, b) {
+            if (b === 0) return [a, 1, 0];
+            const [g, x1, y1] = egcd(b, a % b);
+            return [g, y1, x1 - Math.floor(a / b) * y1];
+        }
+        function modInverse(a, m) {
+            a = ((a % m) + m) % m;
+            const [g, x] = (() => { const r = egcd(a, m); return [r[0], r[1]]; })();
+            if (g !== 1) return null;
+            // compute multiplicative inverse
+            const inv = egcd(a, m)[1];
+            return ((inv % m) + m) % m;
+        }
+
+        /* ---------- Matrix adjugate & inverse (mod 26) ---------- */
+        function matrixAdjugate(matrix) {
+            const n = matrix.length;
+            if (n === 2) {
+                return [
+                    [matrix[1][1], -matrix[0][1]],
+                    [-matrix[1][0], matrix[0][0]]
+                ];
+            } else if (n === 3) {
+                // compute cofactor matrix then transpose (adjugate)
+                const cof = Array.from({ length: 3 }, () => Array(3).fill(0));
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        const minor = [];
+                        for (let r = 0; r < 3; r++) {
+                            if (r === i) continue;
+                            const row = [];
+                            for (let c = 0; c < 3; c++) {
+                                if (c === j) continue;
+                                row.push(matrix[r][c]);
+                            }
+                            minor.push(row);
+                        }
+                        const detMinor = minor[0][0] * minor[1][1] - minor[0][1] * minor[1][0];
+                        cof[i][j] = ((((i + j) % 2 === 0 ? 1 : -1) * detMinor));
+                    }
+                }
+                // transpose cof to get adjugate
+                const adj = Array.from({ length: 3 }, () => Array(3).fill(0));
+                for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) adj[i][j] = cof[j][i];
+                return adj;
+            }
+            return null;
+        }
+
+        function matrixInverseMod26(matrix) {
+            const n = matrix.length;
+            const det = determinant(matrix);
+            const detMod = ((det % 26) + 26) % 26;
+            const invDet = modInverse(detMod, 26);
+            const detDisplayEl = document.getElementById('det-display');
+
+            if (invDet === null) {
+                detDisplayEl.innerText = `Determinant = ${det} (mod26 = ${detMod}) → NO modular inverse (not invertible)`;
+                return null;
+            }
+            detDisplayEl.innerText = `Determinant = ${det} (mod26 = ${detMod}), inverse = ${invDet}`;
+            const adj = matrixAdjugate(matrix);
+            // inv = invDet * adj (mod 26)
+            const inv = adj.map(row => row.map(v => ((v * invDet) % 26 + 26) % 26));
+            return inv;
+        }
+
+        /* ---------- Multiply matrix x vector (mod 26) ---------- */
+        function multiplyMatrixVector(matrix, vector) {
+            const n = matrix.length;
+            const res = Array(n).fill(0);
+            for (let i = 0; i < n; i++) {
+                let s = 0;
+                for (let j = 0; j < n; j++) {
+                    s += matrix[i][j] * vector[j];
+                }
+                res[i] = ((s % 26) + 26) % 26;
+            }
+            return res;
+        }
+
+        /* ---------- Text to numeric blocks, padding with X ---------- */
+        function textToBlocks(text, n) {
+            let cleaned = text.toUpperCase().replace(/[^A-Z]/g, '');
+            while (cleaned.length % n !== 0) cleaned += 'X';
+            const blocks = [];
+            for (let i = 0; i < cleaned.length; i += n) {
+                const chunk = cleaned.substr(i, n).split('').map(ch => letterToNum(ch));
+                blocks.push(chunk);
+            }
+            return blocks;
+        }
+        function blocksToText(blocks) {
+            return blocks.map(b => b.map(numToLetter).join('')).join('');
+        }
+
+        /* ---------- Setup & Event Handlers ---------- */
+        const matrixSizeEl = document.getElementById('matrix-size');
+        const keyInputEl = document.getElementById('key-input');
+        const encryptBtn = document.getElementById('encrypt-btn');
+        const decryptBtn = document.getElementById('decrypt-btn');
+        const textInputEl = document.getElementById('text-input');
+        const outputEl = document.getElementById('output-text');
+        const detDisplayEl = document.getElementById('det-display');
+
+        function updateKeyPreview() {
+            const n = parseInt(matrixSizeEl.value, 10);
+            const mat = parseKeyLetters(keyInputEl.value, n);
+            displayMatrix(mat);
+            if (mat) {
+                // compute determinant/inverse (only for display purpose)
+                const det = determinant(mat);
+                const detMod = ((det % 26) + 26) % 26;
+                const invDet = modInverse(detMod, 26);
+                if (invDet === null) {
+                    detDisplayEl.innerText = `Determinant = ${det} (mod26 = ${detMod}) → NOT invertible`;
+                } else {
+                    detDisplayEl.innerText = `Determinant = ${det} (mod26 = ${detMod}), inverse = ${invDet}`;
+                }
+            } else {
+                detDisplayEl.innerText = '';
+            }
+        }
+
+        matrixSizeEl.addEventListener('change', () => {
+            // clear input & preview when size changed
+            keyInputEl.value = '';
+            updateKeyPreview();
+        });
+
+        keyInputEl.addEventListener('input', () => updateKeyPreview());
+
+        encryptBtn.addEventListener('click', () => {
+            outputEl.value = '';
+            const n = parseInt(matrixSizeEl.value, 10);
+            const keyMat = parseKeyLetters(keyInputEl.value, n);
+            if (!keyMat) { showStatus(`Enter exactly ${n * n} letters for key`, 'error'); return; }
+            // check invertibility (not strictly required for encrypt but good to show)
+            const invDet = modInverse(((determinant(keyMat) % 26) + 26) % 26, 26);
+            if (invDet === null) {
+                showStatus('Warning: Key matrix is NOT invertible mod 26 — decryption will fail', 'error');
+            } else {
+                showStatus('Key matrix OK (invertible). Ready to encrypt.', 'success');
+            }
+
+            const blocks = textToBlocks(textInputEl.value, n);
+            if (blocks.length === 0) { showStatus('Enter text to encrypt', 'error'); return; }
+            // multiply each block by key
+            const cipherBlocks = blocks.map(block => multiplyMatrixVector(keyMat, block));
+            const cipherText = blocksToText(cipherBlocks);
+            outputEl.value = cipherText;
+        });
+
+        decryptBtn.addEventListener('click', () => {
+            outputEl.value = '';
+            const n = parseInt(matrixSizeEl.value, 10);
+            const keyMat = parseKeyLetters(keyInputEl.value, n);
+            if (!keyMat) { showStatus(`Enter exactly ${n * n} letters for key`, 'error'); return; }
+
+            const invMat = matrixInverseMod26(keyMat);
+            if (!invMat) { showStatus('Key is not invertible mod26 — cannot decrypt', 'error'); return; }
+            showStatus('Key inverse computed. Decrypting...', 'success');
+
+            const blocks = textToBlocks(textInputEl.value, n);
+            if (blocks.length === 0) { showStatus('Enter ciphertext to decrypt', 'error'); return; }
+            const plainBlocks = blocks.map(block => multiplyMatrixVector(invMat, block));
+            const plainText = blocksToText(plainBlocks);
+            outputEl.value = plainText;
+        });
+
+        /* initialize */
+        updateKeyPreview();
+    </script>
+
+</body>
+
+</html>
