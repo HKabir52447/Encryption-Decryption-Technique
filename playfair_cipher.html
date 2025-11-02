@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Playfair Cipher</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(90deg, rgb(32, 87, 138) 0%, rgba(25, 25, 94, 0.377) 35%, rgba(32, 86, 138, 1) 100%);
+    }
+
+    .cipher-container {
+      max-width: 1000px;
+    }
+
+    textarea {
+      resize: none;
+    }
+  </style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen p-4">
+  <div class="cipher-container bg-white rounded-2xl shadow-2xl p-8 md:p-10 w-full">
+    <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 text-sky-500">
+      Playfair Cipher 🔐
+    </h1>
+
+    <!-- Input/Output -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div>
+        <label for="key" class="block text-lg font-semibold text-gray-800 mb-2">Enter Key</label>
+        <input id="key" type="text" placeholder="Enter key (e.g. MONARCHY)"
+          class="w-full p-3 bg-blue-100 border border-blue-300 rounded-lg focus:outline-blue-500 mb-4" />
+
+        <label for="inputText" class="block text-lg font-semibold text-gray-800 mb-2">Input Text</label>
+        <textarea id="inputText" rows="6" placeholder="Enter your message here..."
+          class="w-full p-4 bg-blue-100 border border-blue-300 rounded-lg focus:outline-blue-500 tracking-wider"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-lg font-semibold text-green-800 mb-2">Output</label>
+        <div id="resultBox"
+          class="w-full p-4 border border-green-300 rounded-lg bg-green-100 text-green-900 tracking-wider font-mono h-[250px] overflow-auto">
+        </div>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
+      <button id="encryptButton"
+        class="w-full sm:w-1/2 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-blue-300">
+        Encrypt
+      </button>
+      <button id="decryptButton"
+        class="w-full sm:w-1/2 bg-green-500 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-600 transition duration-200 ease-in-out transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-green-300">
+        Decrypt
+      </button>
+    </div>
+
+    <!-- Back Button -->
+    <div class="flex justify-center">
+      <a href="index.html"
+        class="bg-blue-200 hover:bg-blue-400 text-blue-900 hover:text-white px-8 py-2 rounded-md font-bold transition duration-200 ease-in-out">
+        Back
+      </a>
+    </div>
+  </div>
+
+  <script>
+
+    // 1️⃣ Create 5x5 matrix from key
+    function generateMatrix(key) {
+      key = key.toUpperCase().replace(/J/g, "I").replace(/[^A-Z]/g, "");
+      let seen = new Set();
+      let matrix = [];
+
+      // Add key letters
+      for (let char of key) {
+        if (!seen.has(char)) {
+          seen.add(char);
+          matrix.push(char);
+        }
+      }
+
+      // Add remaining alphabets
+      for (let i = 65; i <= 90; i++) {
+        let char = String.fromCharCode(i);
+        if (char !== 'J' && !seen.has(char)) {
+          seen.add(char);
+          matrix.push(char);
+        }
+      }
+
+      // Convert to 2D 5x5
+      let grid = [];
+      for (let i = 0; i < 25; i += 5) grid.push(matrix.slice(i, i + 5));
+      return grid;
+    }
+
+    // 2️⃣ Locate position of a letter in matrix
+    function findPosition(letter, matrix) {
+      if (letter === "J") letter = "I";
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 5; col++) {
+          if (matrix[row][col] === letter) return [row, col];
+        }
+      }
+      return null;
+    }
+
+    // 3️⃣ Prepare plaintext (pairing & filling)
+    function prepareText(text, forEncrypt = true) {
+      text = text.toUpperCase().replace(/J/g, "I").replace(/[^A-Z]/g, "");
+      let result = "";
+      for (let i = 0; i < text.length; i++) {
+        let a = text[i];
+        let b = text[i + 1] || (forEncrypt ? "X" : "");
+        if (a === b && forEncrypt) {
+          result += a + "X";
+        } else {
+          result += a + (b || "");
+          i++;
+        }
+      }
+      if (result.length % 2 !== 0 && forEncrypt) result += "X";
+      return result.match(/.{1,2}/g) || [];
+    }
+
+    // 4️⃣ Encrypt or Decrypt using matrix rules
+    function playfairCipher(text, key, encrypt = true) {
+      const matrix = generateMatrix(key);
+      const pairs = prepareText(text, encrypt);
+      let output = "";
+
+      for (let [a, b] of pairs.map(p => [p[0], p[1]])) {
+        const [r1, c1] = findPosition(a, matrix);
+        const [r2, c2] = findPosition(b, matrix);
+
+        if (r1 === r2) {
+          output += matrix[r1][(c1 + (encrypt ? 1 : 4)) % 5];
+          output += matrix[r2][(c2 + (encrypt ? 1 : 4)) % 5];
+        } else if (c1 === c2) {
+          output += matrix[(r1 + (encrypt ? 1 : 4)) % 5][c1];
+          output += matrix[(r2 + (encrypt ? 1 : 4)) % 5][c2];
+        } else {
+          output += matrix[r1][c2];
+          output += matrix[r2][c1];
+        }
+      }
+      return output;
+    }
+
+    // === Event Handlers ===
+    const inputText = document.getElementById('inputText');
+    const keyInput = document.getElementById('key');
+    const resultBox = document.getElementById('resultBox');
+
+    document.getElementById('encryptButton').addEventListener('click', () => {
+      const key = keyInput.value.trim();
+      const text = inputText.value.trim();
+      if (!key || !text) return alert("Please enter both key and text!");
+      const encrypted = playfairCipher(text, key, true);
+      resultBox.textContent = encrypted;
+    });
+
+    document.getElementById('decryptButton').addEventListener('click', () => {
+      const key = keyInput.value.trim();
+      const text = inputText.value.trim();
+      if (!key || !text) return alert("Please enter both key and text!");
+      const decrypted = playfairCipher(text, key, false);
+      resultBox.textContent = decrypted;
+    });
+  </script>
+</body>
+
+</html>
